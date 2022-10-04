@@ -1,0 +1,17 @@
+[Unit]
+Description=Beton in Form Crawler
+Wants=network-online.target
+After=network.target network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=pi
+WorkingDirectory=/home/pi/repos/beton-in-form-crawler
+Environment=PATH=/home/pi/repos/beton-in-form-crawler/venv/bin:${PATH}
+ExecStart=/usr/bin/env python3 crawl_and_notify.py
+
+[Install]
+WantedBy=multi-user.target
