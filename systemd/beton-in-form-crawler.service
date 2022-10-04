@@ -9,7 +9,7 @@ Type=simple
 Restart=always
 RestartSec=1
 User=pi
-WorkingDirectory=/home/pi/repos/beton-in-form-crawler
+WorkingDirectory=/home/pi/repos/beton-in-form-crawler/src
 Environment=PATH=/home/pi/repos/beton-in-form-crawler/venv/bin:${PATH}
 ExecStart=/usr/bin/env python3 crawl_and_notify.py
 

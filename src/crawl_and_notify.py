@@ -3,6 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 import yagmail
 import time
+import random
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)s: %(message)s',
@@ -35,9 +36,12 @@ if __name__ == '__main__':
     while True:
         if BetonInFormCrawler().isShopOpenViaBanner():
             logging.info("shop is open")
-            yag = yagmail.SMTP("johannes.stark.js@gmail.com", oauth2_file="./secret.json")
+            yag = yagmail.SMTP("johannes.stark.js@gmail.com", oauth2_file="./lib/secret.json")
             yag.send(subject="Beton In Form Shop ist offen", contents="Der Shop ist jetzt offen.", to="evaa.b@hotmail.com")
         else:
             logging.info("shop is closed")
 
-        time.sleep(60*30)
+        sleepSec = random.randint(900, 1800)
+        logging.info("sleeping for {} minutes".format(round(sleepSec/60, 1)))
+        time.sleep(sleepSec)
+
