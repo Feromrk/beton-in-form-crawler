@@ -6,10 +6,6 @@ import time
 import random
 from urllib.parse import urljoin
 
-logging.basicConfig(
-    format='%(asctime)s %(levelname)s: %(message)s',
-    level=logging.INFO)
-
 class BetonInFormCrawler:
     def __init__(self):
         self.rootUrl = 'https://silke-hermes.de'
@@ -95,6 +91,11 @@ class BetonInFormCrawler:
         return True
 
 if __name__ == '__main__':
+    logging.basicConfig(
+        format='%(asctime)s %(levelname)s: %(message)s',
+        level=logging.INFO
+    )
+
     crawler = BetonInFormCrawler()
     while True:
         crawler.download()
