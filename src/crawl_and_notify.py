@@ -1,107 +1,20 @@
-import logging
-import requests
-import bs4
-import yagmail
-import time
-import random
-from urllib.parse import urljoin
 import sys
-import re
-
 MIN_PYTHON = (3,6)
 assert sys.version_info >= MIN_PYTHON, "Python %s.%s or later is required.\n" % MIN_PYTHON
 
-class BetonInFormCrawler:
-    def __init__(self):
-        self.rootUrl = 'https://silke-hermes.de'
-        self.silikonformenUrl = urljoin(self.rootUrl, '/shop/silikonformen')
-        logging.debug("silikonformenUrl: '{}'".format(self.silikonformenUrl))
+import logging
+import yagmail
+import time
+import random
+from BetonInFormCrawler import BetonInFormCrawler
 
-    def getRootUrl(self):
-        return self.rootUrl
+def sendEmail(subject : str, body : str) -> None:
+    yag = yagmail.SMTP('johannes.stark.js@gmail.com', oauth2_file='./lib/secret.json')
+    yag.send(subject=subject, contents=body, to='evaa.b@hotmail.com')
 
-    def urlToSoup(self, url):
-        return bs4.BeautifulSoup(requests.get(url).text, 'html.parser')
-
-    def download(self):
-        self.rootSoup = self.urlToSoup(self.rootUrl)
-        #logging.debug("rootSoup: '{}'".format(self.rootSoup))
-        self.silikonformenSoup = self.urlToSoup(self.silikonformenUrl)
-        #logging.debug("silikonformenSoup: '{}'".format(self.silikonformenSoup))
-
-    def isShopOpenViaBanner(self):
-        banners = self.rootSoup.find_all('p', 'woocommerce-store-notice demo_store')
-            
-        for p in banners:
-            for content in p.contents:
-                if 'geschlossen' in content.lower():
-                    logging.info(f"Found Banner '{content}'")
-                    return False
-        
-        if(len(banners) == 0):
-            logging.info('html shop closed banner not found')
-        else:
-            logging.info('shop closed banner not found')
-        
-        return True
-    
-    def isShopOpenViaAddToCartButton(self):
-
-        def getProductTitle(productTag):
-            assert isinstance(productTag, bs4.element.Tag)
-            title = productTag.find(class_='product_title')
-            title = title.string if title else 'unknown'
-            return title
-
-        products = self.silikonformenSoup.find_all('li', 'product')
-        if len(products) == 0:
-            logging.error('no products found')
-            return False
-
-        logging.debug(f"found {len(products)} products")
-
-        productInStockTag = None
-        for product in products:
-            href = None
-            for child in product.children:
-                if isinstance(child, bs4.element.Tag) and child['href']:
-                    href = child['href']
-                    break
-            if not href:
-                logging.debug(f"strange: found no href for product {product.string}")
-                continue
-            productSoup = self.urlToSoup(href)
-            variationsTag = productSoup.find(class_='variations_form')
-            if variationsTag == None:
-                logging.debug(f"strange: found no variations for product {getProductTitle(productSoup)}")
-                continue
-            if 'in-stock' in variationsTag['data-product_variations']:
-                productInStockTag = productSoup
-                break
-        
-        if not productInStockTag:
-            productInStockTag = products[0]
-            logging.warning(f"strange: no product found that is in stock; using '{getProductTitle(productInStockTag)}'")
-        else:
-            logging.debug(f"product '{getProductTitle(productInStockTag)}' is in stock")
-
-        warumKannIchNichtBestellenButtonTag = productInStockTag.find('a', 'single_add_to_cart_button')
-        if not warumKannIchNichtBestellenButtonTag:
-            logging.info("'Warum kann ich nicht bestellen?' button not found; printing all add to cart buttons:")
-            logging.info(str(productInStockTag.find_all(class_=re.compile('add_to_cart'))))
-            return True
-
-        if 'deaktiviert' in warumKannIchNichtBestellenButtonTag['href']:
-            logging.info("found button '{}' in product '{}'".format(
-                    warumKannIchNichtBestellenButtonTag.string,
-                    getProductTitle(productInStockTag)))
-            return False
-
-        return True
-
-if __name__ == '__main__':
+def main():
     logging.basicConfig(
-        format='%(asctime)s %(levelname)s: %(message)s',
+        format='%(asctime)s %(levelname)s %(funcName)s: %(message)s',
         level=logging.INFO
     )
 
@@ -112,11 +25,19 @@ if __name__ == '__main__':
         
         if crawler.isShopOpenViaAddToCartButton():
             logging.info('shop seems open, will notify')
-            yag = yagmail.SMTP('johannes.stark.js@gmail.com', oauth2_file='./lib/secret.json')
-            yag.send(subject='BETON IN FORM Shop ist jetzt offen', contents=f"{crawler.getRootUrl()} ist jetzt offen.", to='evaa.b@hotmail.com')
+            sendEmail('BETON IN FORM Shop ist jetzt offen', f"{crawler.getRootUrl()} ist jetzt offen.")
             sleepSec += 3600
         else:
             logging.info('shop seems closed')
+        
+        if crawler.isNewsSectionUpdateAvailable():
+            logging.info('news section was updated, will notify')
+            sendEmail('BETON IN FORM Shop Update', f"{crawler.getRootUrl()} hat sich verändert. Schau mal lieber nach, ob es Neuigkeiten gibt.")
+        else:
+            logging.info('no news updates available')
 
         logging.info("rechecking in {} minutes".format(int(sleepSec/60)))
         time.sleep(sleepSec)
+
+if __name__ == '__main__':
+    main()
