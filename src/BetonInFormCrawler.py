@@ -1,4 +1,5 @@
 import logging
+from typing import Tuple
 import requests
 import bs4
 from urllib.parse import urljoin
@@ -14,16 +15,17 @@ class BetonInFormCrawler:
         self.silikonformenUrl = urljoin(self.rootUrl, '/shop/silikonformen')
         logging.debug("silikonformenUrl: '{}'".format(self.silikonformenUrl))
 
+    @staticmethod
+    def __urlToSoup(url : str) -> bs4.BeautifulSoup:
+        return bs4.BeautifulSoup(requests.get(url).text, 'html.parser')
+
     def getRootUrl(self) -> str:
         return self.rootUrl
 
-    def urlToSoup(self, url : str) -> bs4.BeautifulSoup:
-        return bs4.BeautifulSoup(requests.get(url).text, 'html.parser')
-
     def download(self) -> None:
-        self.rootSoup = self.urlToSoup(self.rootUrl)
+        self.rootSoup = self.__urlToSoup(self.rootUrl)
         #logging.debug("rootSoup: '{}'".format(self.rootSoup))
-        self.silikonformenSoup = self.urlToSoup(self.silikonformenUrl)
+        self.silikonformenSoup = self.__urlToSoup(self.silikonformenUrl)
         #logging.debug("silikonformenSoup: '{}'".format(self.silikonformenSoup))
 
     def isShopOpenViaBanner(self) -> bool:
@@ -32,7 +34,7 @@ class BetonInFormCrawler:
         for p in banners:
             for content in p.contents:
                 if 'geschlossen' in content.lower():
-                    logging.info(f"Found Banner '{content}'")
+                    logging.debug(f"found banner '{content}'")
                     return False
         
         if(len(banners) == 0):
@@ -42,7 +44,7 @@ class BetonInFormCrawler:
         
         return True
     
-    def isShopOpenViaAddToCartButton(self) -> bool:
+    def isShopOpenViaAddToCartButton(self) -> Tuple[bool, str]:
 
         def getProductTitle(productTag):
             assert isinstance(productTag, bs4.element.Tag)
@@ -53,11 +55,12 @@ class BetonInFormCrawler:
         products = self.silikonformenSoup.find_all('li', 'product')
         if len(products) == 0:
             logging.error('no products found')
-            return False
+            return False, None
 
         logging.debug(f"found {len(products)} products")
 
         productInStockTag = None
+        productInStockUrl = None
         for product in products:
             href = None
             for child in product.children:
@@ -67,17 +70,18 @@ class BetonInFormCrawler:
             if not href:
                 logging.debug(f"strange: found no href for product {product.string}")
                 continue
-            productSoup = self.urlToSoup(href)
+            productSoup = self.__urlToSoup(href)
             variationsTag = productSoup.find(class_='variations_form')
             if variationsTag == None:
                 logging.debug(f"strange: found no variations for product {getProductTitle(productSoup)}")
                 continue
             if 'in-stock' in variationsTag['data-product_variations']:
                 productInStockTag = productSoup
+                productInStockUrl = href
                 break
         
         if not productInStockTag:
-            productInStockTag = products[0]
+            productInStockTag = (products[0], None)
             logging.warning(f"strange: no product found that is in stock; using '{getProductTitle(productInStockTag)}'")
         else:
             logging.debug(f"product '{getProductTitle(productInStockTag)}' is in stock")
@@ -86,15 +90,15 @@ class BetonInFormCrawler:
         if not warumKannIchNichtBestellenButtonTag:
             logging.info("'Warum kann ich nicht bestellen?' button not found; printing all add to cart buttons:")
             logging.info(str(productInStockTag.find_all(class_=re.compile('add_to_cart'))))
-            return True
+            return True, productInStockUrl
 
         if 'deaktiviert' in warumKannIchNichtBestellenButtonTag['href']:
-            logging.info("found button '{}' in product '{}'".format(
+            logging.debug("found button '{}' in product '{}'".format(
                     warumKannIchNichtBestellenButtonTag.string,
                     getProductTitle(productInStockTag)))
-            return False
+            return False, None
 
-        return True
+        return True, productInStockUrl
 
     def isNewsSectionUpdateAvailable(self) -> bool:
         rootWebsiteStrings = []
