@@ -17,7 +17,7 @@ def main():
     )
 
     crawler = BetonInFormCrawler()
-    lastShopOpen = False
+    lastShopOpen = True
     while True:
         crawler.download()
         sleepSec = random.randint(300, 900)
