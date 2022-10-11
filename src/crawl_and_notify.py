@@ -41,7 +41,7 @@ def main():
             emailSubject = 'BETON IN FORM Shop ist jetzt offen'
             
             if shopOpenViaAddToCartButtonProductUrl:
-                emailBody += f"Produkt ist bestellbar: {shopOpenViaAddToCartButtonProductUrl}"
+                emailBody = f"Produkt ist bestellbar: {shopOpenViaAddToCartButtonProductUrl}"
             else:
                 emailBody = f"Jetzt aber schnell: {crawler.getRootUrl()} hat geöffnet."
         
