@@ -17,6 +17,7 @@ def main():
     )
 
     crawler = BetonInFormCrawler()
+    lastShopOpen = False
     while True:
         crawler.download()
         sleepSec = random.randint(300, 900)
@@ -30,7 +31,7 @@ def main():
             shopOpen = True
             shopOpenReason = 'banner'
             emailSubject = 'BETON IN FORM Shop scheint geöffnet zu sein'
-            emailBody = f"{crawler.getRootUrl()} scheint geöffnet zu sein.\nWie komm ich drauf? 'Shop geschlossen' Banner am unteren Displayrand ist nicht da."
+            emailBody = f"{crawler.getRootUrl()} scheint geöffnet zu sein.\n\n'Shop geschlossen' Banner am unteren Displayrand ist nicht da."
 
         shopOpenViaAddToCartButton, shopOpenViaAddToCartButtonProductUrl = crawler.isShopOpenViaAddToCartButton()
         
@@ -38,18 +39,21 @@ def main():
             shopOpen = True
             shopOpenReason = 'addToCartButton'
             emailSubject = 'BETON IN FORM Shop ist jetzt offen'
-            emailBody = f"Jetzt aber schnell: {crawler.getRootUrl()} hat geöffnet."
             
             if shopOpenViaAddToCartButtonProductUrl:
-                emailBody += f"\nWie komm ich drauf? 'Warum kann ich nicht bestellen?' Button fehlt hier: {shopOpenViaAddToCartButtonProductUrl}"
+                emailBody += f"Produkt ist bestellbar: {shopOpenViaAddToCartButtonProductUrl}"
+            else:
+                emailBody = f"Jetzt aber schnell: {crawler.getRootUrl()} hat geöffnet."
         
-        if shopOpen:
-            logging.info(f"shop seems open, reason '{shopOpenReason}', will notify")
-            emailBody += '\nNormalerweise würde ich dir noch einen Witz mitgeben, aber dafür hast du jetzt keine Zeit.'
-            Email.send(emailSubject, emailBody, False)
-            sleepSec += 3600
+        if shopOpen and lastShopOpen == False:
+                logging.info(f"shop changed from closed to open, reason '{shopOpenReason}', will notify")
+                Email.send(emailSubject, emailBody)
+                sleepSec += 3600
+        elif shopOpen:
+            logging.info('shop seems open, but already notified')
         else:
             logging.info('shop seems closed')
+        lastShopOpen = shopOpen
         
         if crawler.isNewsSectionUpdateAvailable():
             logging.info('news section was updated, will notify')
