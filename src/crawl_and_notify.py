@@ -27,11 +27,11 @@ def main():
         emailSubject = None
         emailBody = None
 
-        if crawler.isShopOpenViaBanner():
-            shopOpen = True
-            shopOpenReason = 'banner'
-            emailSubject = 'BETON IN FORM Shop scheint geöffnet zu sein'
-            emailBody = f"{crawler.getRootUrl()} scheint geöffnet zu sein.\n\n'Shop geschlossen' Banner am unteren Displayrand ist nicht da."
+        # if crawler.isShopOpenViaBanner():
+        #     shopOpen = True
+        #     shopOpenReason = 'banner'
+        #     emailSubject = 'BETON IN FORM Shop scheint geöffnet zu sein'
+        #     emailBody = f"{crawler.getRootUrl()} scheint geöffnet zu sein.\n\n'Shop geschlossen' Banner am unteren Displayrand ist nicht da."
 
         shopOpenViaAddToCartButton, shopOpenViaAddToCartButtonProductUrl = crawler.isShopOpenViaAddToCartButton()
         

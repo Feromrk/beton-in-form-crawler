@@ -33,7 +33,7 @@ class BetonInFormCrawler:
             
         for p in banners:
             for content in p.contents:
-                if 'geschlossen' in content.lower():
+                if content and 'geschlossen' in str(content).lower():
                     logging.debug(f"found banner '{content}'")
                     return False
         

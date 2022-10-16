@@ -18,7 +18,7 @@ def send(subject : str, body : str, appendJokeToBody : bool = True) -> None:
         if joke:
             body += f"\n\nUnd hier noch ein Witz für dich:\n{joke}"
 
-    yag = yagmail.SMTP('johannes.stark.js@gmail.com', oauth2_file='./lib/secret.json')
+    yag = yagmail.SMTP('johannes.stark.js@gmail.com', oauth2_file='./secrets/beton-in-form-crawler/gmail.json')
 
     kwargs = {
         'subject' : subject,
